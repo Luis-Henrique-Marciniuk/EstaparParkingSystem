@@ -9,6 +9,7 @@ import lombok.Setter;
 import java.time.LocalTime;
 
 @Entity
+@Table(name = "sector")
 @Getter
 @Setter
 @NoArgsConstructor

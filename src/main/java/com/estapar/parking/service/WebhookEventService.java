@@ -1,10 +1,12 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.dto.WebhookEventDTO;
 import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.ParkingSession;
 import com.estapar.parking.entity.Spot;
 import com.estapar.parking.repository.SpotRepository;
+import com.estapar.parking.repository.ParkingSessionRepository;
+import com.estapar.parking.repository.SectorRepository;
+import com.estapar.parking.dto.WebhookEventDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +19,19 @@ public class WebhookEventService {
 
     private final SpotRepository spotRepository;
     private final ParkingSessionRepository sessionRepository;
-    private final GarageSectorRepository sectorRepository;
+    private final SectorRepository sectorRepository;
 
     public void processEvent(WebhookEventDTO event) {
         switch (event.getEventType()) {
-            case "ENTRY" -> handleEntry(event);
-            case "PARKED" -> handleParked(event);
-            case "EXIT" -> handleExit(event);
+            case "ENTRY":
+                handleEntry(event);
+                break;
+            case "PARKED":
+                handleParked(event);
+                break;
+            case "EXIT":
+                handleExit(event);
+                break;
         }
     }
 
@@ -35,7 +43,7 @@ public class WebhookEventService {
     }
 
     private void handleParked(WebhookEventDTO event) {
-        Optional<Spot> optSpot = spotRepository.findByLatAndLng(event.getLat(), event.getLng());
+        Optional<Spot> optSpot = Optional.ofNullable(spotRepository.findByLatAndLng(event.getLat(), event.getLng()));
         Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(event.getLicensePlate());
 
         if (optSpot.isPresent() && optSession.isPresent()) {
@@ -43,9 +51,9 @@ public class WebhookEventService {
             ParkingSession session = optSession.get();
 
             spot.setOccupied(true);
-            session.setSpot(spot);
-//            session.setSector(spot.getSector());
+            spot.setCurrentParkingSession(session);
             spotRepository.save(spot);
+            session.setSpot(spot);
             sessionRepository.save(session);
         }
     }
@@ -59,30 +67,47 @@ public class WebhookEventService {
             Spot spot = session.getSpot();
             if (spot != null) {
                 spot.setOccupied(false);
+                spot.setCurrentParkingSession(null);
                 spotRepository.save(spot);
             }
-
+            Duration duration = Duration.between(session.getEntryTime(), event.getExitTime());
+            session.setDuration(duration);
             double price = calculatePrice(session);
             session.setPrice(price);
-
             sessionRepository.save(session);
         }
     }
 
     private double calculatePrice(ParkingSession session) {
-        long minutes = Duration.between(session.getEntryTime(), session.getExitTime()).toMinutes();
-        Sector sector = session.getSector();
+        long minutesParked = session.getDuration().toMinutes();
+        Sector sector = session.getSpot().getSector();
 
-        if (sector == null) return 0.0;
+        if (sector == null) {
+            return 0.0;
+        }
 
         double basePrice = sector.getBasePrice();
+        double dynamicPrice = applyDynamicPricing(basePrice, sector.getName());
+        return dynamicPrice * (minutesParked / 60.0);
+    }
 
-        if (minutes <= 30) {
-            return basePrice * 0.5;
-        } else if (minutes <= 60) {
+    private double applyDynamicPricing(double basePrice, String sectorName) {
+        Sector sector = sectorRepository.findByName(sectorName);
+        if (sector == null) {
             return basePrice;
+        }
+        long occupiedSpots = spotRepository.countBySectorNameAndOccupied(sectorName, true);
+        double occupancyRate = (double) occupiedSpots / sector.getMaxCapacity();
+
+        if (occupancyRate < 0.25) {
+            return basePrice * 0.9;
+        } else if (occupancyRate <= 0.50) {
+            return basePrice;
+        } else if (occupancyRate <= 0.75) {
+            return basePrice * 1.1;
         } else {
-            return basePrice + ((minutes - 60) / 30.0) * (basePrice * 0.3);
+            return basePrice * 1.25;
         }
     }
 }
+

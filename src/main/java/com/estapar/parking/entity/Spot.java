@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "spot")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,13 +25,14 @@ public class Spot {
     @Column(nullable = false)
     private boolean occupied = false;
 
-    @ManyToOne
-    @JoinColumn(name = "sector_name", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sector_id", nullable = false)
     private Sector sector;
 
-    private LocalDateTime entryTime;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parking_session_id")
+    private ParkingSession currentParkingSession;
 
-    private String licensePlate;
 
     public Spot(Double lat, Double lng, Sector sector) {
         this.lat = lat;

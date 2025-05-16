@@ -7,8 +7,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Entity
+@Table(name = "parking_session")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -18,14 +20,23 @@ public class ParkingSession {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String licensePlate;
+
+    @Column(nullable = false)
     private LocalDateTime entryTime;
+
     private LocalDateTime exitTime;
+
     private Double price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "spot_id", nullable = false)
     private Spot spot;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sector_id", nullable = false)
     private Sector sector;
+
+    private Duration duration;
 }

@@ -2,10 +2,10 @@ package com.estapar.parking.service;
 
 import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.Spot;
-import com.estapar.parking.entity.Vehicle;
+import com.estapar.parking.entity.ParkingSession;
 import com.estapar.parking.repository.SectorRepository;
 import com.estapar.parking.repository.SpotRepository;
-import com.estapar.parking.repository.VehicleRepository;
+import com.estapar.parking.repository.ParkingSessionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -28,23 +28,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.Duration;
 
 @Service
 public class ParkingService {
 
     private final SectorRepository sectorRepository;
     private final SpotRepository spotRepository;
-    private final VehicleRepository vehicleRepository;
+    private final ParkingSessionRepository sessionRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     @Value("${simulator.url}")
     private String simulatorUrl;
 
-    public ParkingService(SectorRepository sectorRepository, SpotRepository spotRepository, VehicleRepository vehicleRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public ParkingService(SectorRepository sectorRepository, SpotRepository spotRepository, ParkingSessionRepository sessionRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.sectorRepository = sectorRepository;
         this.spotRepository = spotRepository;
-        this.vehicleRepository = vehicleRepository;
+        this.sessionRepository = sessionRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }
@@ -54,7 +55,7 @@ public class ParkingService {
         fetchAndSaveGarageData();
     }
 
-    public void fetchAndSaveGarageData() {
+    private void fetchAndSaveGarageData() {
         String garageUrl = simulatorUrl + "/garage";
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(garageUrl, String.class);
@@ -110,26 +111,37 @@ public class ParkingService {
     }
 
     private void handleEntry(String licensePlate, LocalDateTime entryTime) {
-        if (!vehicleRepository.existsById(licensePlate)) {
-            Vehicle vehicle = new Vehicle(licensePlate, entryTime);
-            vehicleRepository.save(vehicle);
+        Optional<Spot> spot = spotRepository.findFirstAvailableSpot();
+        if (spot.isPresent()) {
+            ParkingSession session = new ParkingSession();
+            session.setLicensePlate(licensePlate);
+            session.setEntryTime(entryTime);
+            session.setSpot(spot.get()); // seta a vaga na sessão
+            sessionRepository.save(session);
             System.out.println("Veículo " + licensePlate + " entrou às " + entryTime);
         } else {
-            System.out.println("Veículo " + licensePlate + " já está registrado.");
+            System.out.println("Setor Lotado");
+            //TODO: Implementar lógica para lidar com setor lotado (lançar exceção, retornar erro, etc.)
         }
     }
 
     private void handleParked(String licensePlate, double lat, double lng) {
-        Spot spot = spotRepository.findByLatAndLng(lat, lng);
-        Vehicle vehicle = vehicleRepository.findById(licensePlate).orElse(null);
+        Optional<Spot> optSpot = Optional.ofNullable(spotRepository.findByLatAndLng(lat, lng));
+        Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(licensePlate);
 
-        if (spot != null && vehicle != null && !spot.isOccupied()) {
+        if (optSpot.isPresent() && optSession.isPresent()) {
+            Spot spot = optSpot.get();
+            ParkingSession session = optSession.get();
+            // Verifica se a vaga já está ocupada
+            if (spot.isOccupied()) {
+                System.out.println("Vaga já ocupada: " + spot.getId());
+                return;
+            }
             spot.setOccupied(true);
-            spot.setEntryTime(LocalDateTime.now(java.time.Clock.systemDefaultZone()));
-            spot.setLicensePlate(licensePlate);
+            spot.setCurrentParkingSession(session);
             spotRepository.save(spot);
-            vehicle.setCurrentSpot(spot);
-            vehicleRepository.save(vehicle);
+            session.setSpot(spot);
+            sessionRepository.save(session);
             System.out.println("Veículo " + licensePlate + " estacionou na vaga " + spot.getId() + ".");
         } else {
             System.out.println("Não foi possível estacionar " + licensePlate + " na vaga (vaga não encontrada ou ocupada).");
@@ -137,20 +149,22 @@ public class ParkingService {
     }
 
     private void handleExit(String licensePlate, LocalDateTime exitTime) {
-        Vehicle vehicle = vehicleRepository.findById(licensePlate).orElse(null);
-        if (vehicle != null && vehicle.getCurrentSpot() != null) {
-            vehicle.setExitTime(exitTime);
-            double price = calculatePrice(vehicle);
-            vehicle.setPricePaid(price);
-            vehicleRepository.save(vehicle);
+        Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(licensePlate);
+        if (optSession.isPresent()) {
+            ParkingSession session = optSession.get();
+            session.setExitTime(exitTime);
 
-            Spot spot = vehicle.getCurrentSpot();
-            spot.setOccupied(false);
-            spot.setEntryTime(null);
-            spot.setLicensePlate(null);
-            spotRepository.save(spot);
-            vehicle.setCurrentSpot(null);
-            vehicleRepository.save(vehicle);
+            Spot spot = session.getSpot();
+            if (spot != null) {
+                spot.setOccupied(false);
+                spot.setCurrentParkingSession(null);
+                spotRepository.save(spot);
+            }
+            Duration duration = Duration.between(session.getEntryTime(), exitTime);
+            session.setDuration(duration);
+            double price = calculatePrice(session);
+            session.setPrice(price);
+            sessionRepository.save(session);
 
             System.out.println("Veículo " + licensePlate + " saiu às " + exitTime + ", preço: " + price + ".");
         } else {
@@ -158,13 +172,12 @@ public class ParkingService {
         }
     }
 
-    private double calculatePrice(Vehicle vehicle) {
-        if (vehicle.getEntryTime() == null || vehicle.getExitTime() == null || vehicle.getCurrentSpot() == null) {
+    private double calculatePrice(ParkingSession session) {
+        if (session.getEntryTime() == null || session.getExitTime() == null || session.getSpot() == null) {
             return 0.0;
         }
-
-        long minutesParked = ChronoUnit.MINUTES.between(vehicle.getEntryTime(), vehicle.getExitTime());
-        Sector sector = sectorRepository.findByName(vehicle.getCurrentSpot().getSector().getName());
+        long minutesParked = session.getDuration().toMinutes();
+        Sector sector = session.getSpot().getSector();
 
         if (sector == null) {
             return 0.0;
@@ -195,45 +208,48 @@ public class ParkingService {
     }
 
     public ResponseEntity<?> getVehicleStatus(String licensePlate) {
-        Vehicle vehicle = vehicleRepository.findById(licensePlate).orElse(null);
-        if (vehicle == null) {
+        Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(licensePlate);
+        if (optSession.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Veículo não encontrado"));
         }
-        String timeParked = (vehicle.getEntryTime() != null && vehicle.getExitTime() == null)
-                ? formatDuration(vehicle.getEntryTime(), LocalDateTime.now(java.time.Clock.systemDefaultZone()))
-                : (vehicle.getEntryTime() != null && vehicle.getExitTime() != null)
-                ? formatDuration(vehicle.getEntryTime(), vehicle.getExitTime())
+        ParkingSession session = optSession.get();
+
+        String timeParked = session.getDuration() != null
+                ? String.format("%02d:%02d:%02d", session.getDuration().toHours(), session.getDuration().toMinutesPart(), session.getDuration().toSecondsPart())
                 : "N/A";
 
         Map<String, Object> response = new HashMap<>();
-        response.put("license_plate", vehicle.getLicensePlate());
-        response.put("price_until_now", vehicle.getPricePaid() != null ? vehicle.getPricePaid() : 0.00);
-        response.put("entry_time", vehicle.getEntryTime() != null ? vehicle.getEntryTime().format(DateTimeFormatter.ISO_DATE_TIME) : null);
+        response.put("license_plate", session.getLicensePlate());
+        response.put("price_until_now", session.getPrice() != null ? session.getPrice() : 0.00);
+        response.put("entry_time", session.getEntryTime() != null ? session.getEntryTime().format(DateTimeFormatter.ISO_DATE_TIME) : null);
         response.put("time_parked", timeParked);
         return ResponseEntity.ok(response);
     }
 
     public ResponseEntity<?> getSpotStatus(double lat, double lng) {
-        Spot spot = spotRepository.findByLatAndLng(lat, lng);
-        if (spot == null) {
+        Optional<Spot> optSpot = Optional.ofNullable(spotRepository.findByLatAndLng(lat, lng));
+        if (optSpot.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Vaga não encontrada"));
         }
-        String timeParked = spot.isOccupied() && spot.getEntryTime() != null
-                ? formatDuration(spot.getEntryTime(), LocalDateTime.now(java.time.Clock.systemDefaultZone()))
+        Spot spot = optSpot.get();
+        Optional<ParkingSession> optSession =  (spot.getCurrentParkingSession() != null) ? Optional.of(spot.getCurrentParkingSession()) : Optional.empty();
+
+        String timeParked = optSession.isPresent() && spot.isOccupied()
+                ? String.format("%02d:%02d:%02d", optSession.get().getDuration().toHours(), optSession.get().getDuration().toMinutesPart(), optSession.get().getDuration().toSecondsPart())
                 : "N/A";
 
         Map<String, Object> response = new HashMap<>();
         response.put("occupied", spot.isOccupied());
-        response.put("entry_time", spot.getEntryTime() != null ? spot.getEntryTime().format(DateTimeFormatter.ISO_DATE_TIME) : null);
+        response.put("entry_time", optSession.isPresent() ? optSession.get().getEntryTime().format(DateTimeFormatter.ISO_DATE_TIME) : null);
         response.put("time_parked", timeParked);
         return ResponseEntity.ok(response);
     }
 
     public ResponseEntity<?> getRevenue(String dateStr, String sectorName) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
-        LocalDateTime date;
+        LocalDate date;
         try {
-            date = LocalDate.parse(dateStr, dateFormatter).atStartOfDay();
+            date = LocalDate.parse(dateStr, dateFormatter);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Formato de data inválido (AAAA-MM-DD)"));
         }
@@ -243,15 +259,15 @@ public class ParkingService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Setor não encontrado"));
         }
 
-        List<Vehicle> vehicles = vehicleRepository.findAll().stream()
-                .filter(v -> v.getExitTime() != null &&
-                        v.getExitTime().toLocalDate().isEqual(date.toLocalDate()) &&
-                        v.getCurrentSpot() != null &&
-                        v.getCurrentSpot().getSectorName().equals(sectorName) &&
-                        v.getPricePaid() != null)
+        List<ParkingSession> sessions = sessionRepository.findAll().stream()
+                .filter(s -> s.getExitTime() != null &&
+                        s.getExitTime().toLocalDate().isEqual(date) &&
+                        s.getSpot() != null &&
+                        s.getSpot().getSector().getName().equals(sectorName) &&
+                        s.getPrice() != null)
                 .collect(Collectors.toList());
 
-        double totalRevenue = vehicles.stream().mapToDouble(Vehicle::getPricePaid).sum();
+        double totalRevenue = sessions.stream().mapToDouble(ParkingSession::getPrice).sum();
 
         Map<String, Object> response = new HashMap<>();
         response.put("amount", totalRevenue);
@@ -260,12 +276,8 @@ public class ParkingService {
         return ResponseEntity.ok(response);
     }
 
-    private String formatDuration(LocalDateTime start, LocalDateTime end) {
-        long totalSeconds = ChronoUnit.SECONDS.between(start, end);
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    public Optional<Spot> findFirstAvailableSpot() {
+        return spotRepository.findFirstByOccupiedFalse();
     }
 }
 

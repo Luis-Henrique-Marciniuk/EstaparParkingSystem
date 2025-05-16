@@ -6,6 +6,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name="vehicle")
 @Getter
 @Setter
 public class Vehicle {
@@ -13,19 +14,9 @@ public class Vehicle {
     @Id
     private String licensePlate;
 
-    @Column(nullable = false)
-    private LocalDateTime entryTime;
-
-    private LocalDateTime exitTime;
-
-    @ManyToOne
-    @JoinColumn(name = "spot_id")
-    private Spot currentSpot;
-
-    private Double pricePaid;
-
     public Vehicle(String licensePlate, LocalDateTime entryTime) {
         this.licensePlate = licensePlate;
-        this.entryTime = entryTime;
+        // this.entryTime = entryTime;
     }
 }
+
