@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -36,6 +35,6 @@ public class Garage {
     private Integer durationLimitMinutes;
 
     @OneToMany(mappedBy = "garage")
-    private List<ParkingSpot> parkingSpots;
+    private List<Spot> spots;
 
 }

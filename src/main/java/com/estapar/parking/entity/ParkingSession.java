@@ -24,7 +24,7 @@ public class ParkingSession {
     private Double price;
 
     @ManyToOne
-    private ParkingSpot spot;
+    private Spot spot;
 
     @ManyToOne
     private Garage sector;

@@ -1,7 +1,7 @@
 package com.estapar.parking.repository;
 
 import com.estapar.parking.entity.ParkingSession;
-import com.estapar.parking.entity.ParkingSpot;
+import com.estapar.parking.entity.Spot;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -10,6 +10,6 @@ import java.util.Optional;
 
 public interface ParkingSessionRepository extends JpaRepository<ParkingSession, Long> {
     Optional<ParkingSession> findByLicensePlateAndExitTimeIsNull(String licensePlate);
-    Optional<ParkingSession> findBySpotAndExitTimeIsNull(ParkingSpot spot);
+    Optional<ParkingSession> findBySpotAndExitTimeIsNull(Spot spot);
     List<ParkingSession> findAllBySectorNameAndExitTimeBetween(String sectorName, LocalDateTime start, LocalDateTime end);
 }

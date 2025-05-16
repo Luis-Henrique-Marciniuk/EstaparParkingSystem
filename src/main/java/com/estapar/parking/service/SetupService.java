@@ -1,9 +1,9 @@
 package com.estapar.parking.service;
 
 import com.estapar.parking.entity.Garage;
-import com.estapar.parking.entity.ParkingSpot;
+import com.estapar.parking.entity.Spot;
 import com.estapar.parking.repository.GarageSectorRepository;
-import com.estapar.parking.repository.ParkingSpotRepository;
+import com.estapar.parking.repository.SpotRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.time.LocalTime;
 public class SetupService {
 
     private final GarageSectorRepository sectorRepository;
-    private final ParkingSpotRepository spotRepository;
+    private final SpotRepository spotRepository;
     private final ObjectMapper objectMapper;
 
     public void importGarageData() {
@@ -37,7 +37,7 @@ public class SetupService {
         }
 
         for (JsonNode spotNode : response.get("spots")) {
-            ParkingSpot spot = new ParkingSpot();
+            Spot spot = new Spot();
             spot.setLat(spotNode.get("lat").asDouble());
             spot.setLng(spotNode.get("lng").asDouble());
             spot.setOccupied(false);

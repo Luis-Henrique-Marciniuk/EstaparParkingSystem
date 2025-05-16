@@ -7,9 +7,9 @@ import com.estapar.parking.dto.response.PlateStatusResponseDTO;
 import com.estapar.parking.dto.response.RevenueResponseDTO;
 import com.estapar.parking.dto.response.SpotStatusResponseDTO;
 import com.estapar.parking.entity.ParkingSession;
-import com.estapar.parking.entity.ParkingSpot;
+import com.estapar.parking.entity.Spot;
 import com.estapar.parking.repository.ParkingSessionRepository;
-import com.estapar.parking.repository.ParkingSpotRepository;
+import com.estapar.parking.repository.SpotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +23,7 @@ import java.util.Optional;
 public class QueryService {
 
     private final ParkingSessionRepository sessionRepository;
-    private final ParkingSpotRepository spotRepository;
+    private final SpotRepository spotRepository;
 
     public PlateStatusResponseDTO getPlateStatus(PlateStatusRequestDTO request) {
         Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(request.getLicensePlate());
@@ -41,11 +41,11 @@ public class QueryService {
     }
 
     public SpotStatusResponseDTO getSpotStatus(SpotStatusRequestDTO request) {
-        Optional<ParkingSpot> optSpot = spotRepository.findByLatAndLng(request.getLat(), request.getLng());
+        Optional<Spot> optSpot = spotRepository.findByLatAndLng(request.getLat(), request.getLng());
 
         SpotStatusResponseDTO response = new SpotStatusResponseDTO();
         if (optSpot.isPresent()) {
-            ParkingSpot spot = optSpot.get();
+            Spot spot = optSpot.get();
             response.setOcupied(spot.isOccupied());
 
             Optional<ParkingSession> optSession = sessionRepository.findBySpotAndExitTimeIsNull(spot);

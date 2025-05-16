@@ -21,7 +21,7 @@ public class ParkingMovement {
 
     @ManyToOne
     @JoinColumn(name = "spot_id", nullable = false)
-    private ParkingSpot parkingSpot;
+    private Spot spot;
 
     @Column(nullable = false)
     private LocalDateTime entryTime;

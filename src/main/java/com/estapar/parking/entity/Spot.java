@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ParkingSpot {
+public class Spot {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

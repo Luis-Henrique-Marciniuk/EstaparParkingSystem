@@ -3,10 +3,10 @@ package com.estapar.parking.service;
 import com.estapar.parking.dto.WebhookEventDTO;
 import com.estapar.parking.entity.Garage;
 import com.estapar.parking.entity.ParkingSession;
-import com.estapar.parking.entity.ParkingSpot;
+import com.estapar.parking.entity.Spot;
 import com.estapar.parking.repository.GarageSectorRepository;
 import com.estapar.parking.repository.ParkingSessionRepository;
-import com.estapar.parking.repository.ParkingSpotRepository;
+import com.estapar.parking.repository.SpotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WebhookEventService {
 
-    private final ParkingSpotRepository spotRepository;
+    private final SpotRepository spotRepository;
     private final ParkingSessionRepository sessionRepository;
     private final GarageSectorRepository sectorRepository;
 
@@ -37,11 +37,11 @@ public class WebhookEventService {
     }
 
     private void handleParked(WebhookEventDTO event) {
-        Optional<ParkingSpot> optSpot = spotRepository.findByLatAndLng(event.getLat(), event.getLng());
+        Optional<Spot> optSpot = spotRepository.findByLatAndLng(event.getLat(), event.getLng());
         Optional<ParkingSession> optSession = sessionRepository.findByLicensePlateAndExitTimeIsNull(event.getLicensePlate());
 
         if (optSpot.isPresent() && optSession.isPresent()) {
-            ParkingSpot spot = optSpot.get();
+            Spot spot = optSpot.get();
             ParkingSession session = optSession.get();
 
             spot.setOccupied(true);
@@ -58,7 +58,7 @@ public class WebhookEventService {
             ParkingSession session = optSession.get();
             session.setExitTime(event.getExitTime());
 
-            ParkingSpot spot = session.getSpot();
+            Spot spot = session.getSpot();
             if (spot != null) {
                 spot.setOccupied(false);
                 spotRepository.save(spot);

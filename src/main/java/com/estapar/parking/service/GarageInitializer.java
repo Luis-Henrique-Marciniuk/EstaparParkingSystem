@@ -1,15 +1,14 @@
 package com.estapar.parking.service;
 
 import com.estapar.parking.entity.Garage;
-import com.estapar.parking.entity.ParkingSpot;
+import com.estapar.parking.entity.Spot;
 import com.estapar.parking.repository.GarageSectorRepository;
-import com.estapar.parking.repository.ParkingSpotRepository;
+import com.estapar.parking.repository.SpotRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +17,7 @@ import java.util.Map;
 public class GarageInitializer {
 
     private final GarageSectorRepository sectorRepository;
-    private final ParkingSpotRepository spotRepository;
+    private final SpotRepository spotRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostConstruct
@@ -48,7 +47,7 @@ public class GarageInitializer {
             Garage sector = sectorRepository.findById(sectorKey).orElse(null);
             if (sector == null) continue;
 
-            ParkingSpot spot = new ParkingSpot();
+            Spot spot = new Spot();
             spot.setLat(((Number) sp.get("lat")).doubleValue());
             spot.setLng(((Number) sp.get("lng")).doubleValue());
 //            spot.setSector(sector);
