@@ -1,8 +1,7 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.entity.Garage;
+import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.Spot;
-import com.estapar.parking.repository.GarageSectorRepository;
 import com.estapar.parking.repository.SpotRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +25,7 @@ public class SetupService {
         JsonNode response = restTemplate.getForObject(url, JsonNode.class);
 
         for (JsonNode sectorNode : response.get("garage")) {
-            Garage sector = new Garage();
+            Sector sector = new Sector();
 //            sector.setName(sectorNode.get("sector").asText());
             sector.setBasePrice(sectorNode.get("basePrice").asDouble());
             sector.setMaxCapacity(sectorNode.get("max_capacity").asInt());

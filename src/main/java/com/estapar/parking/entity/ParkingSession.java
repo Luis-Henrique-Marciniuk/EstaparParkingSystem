@@ -27,5 +27,5 @@ public class ParkingSession {
     private Spot spot;
 
     @ManyToOne
-    private Garage sector;
+    private Sector sector;
 }

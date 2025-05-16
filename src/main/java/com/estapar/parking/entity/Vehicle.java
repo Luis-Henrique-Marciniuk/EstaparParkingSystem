@@ -1,9 +1,9 @@
 package com.estapar.parking.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -12,4 +12,20 @@ public class Vehicle {
 
     @Id
     private String licensePlate;
+
+    @Column(nullable = false)
+    private LocalDateTime entryTime;
+
+    private LocalDateTime exitTime;
+
+    @ManyToOne
+    @JoinColumn(name = "spot_id")
+    private Spot currentSpot;
+
+    private Double pricePaid;
+
+    public Vehicle(String licensePlate, LocalDateTime entryTime) {
+        this.licensePlate = licensePlate;
+        this.entryTime = entryTime;
+    }
 }

@@ -1,11 +1,9 @@
 package com.estapar.parking.service;
 
 import com.estapar.parking.dto.WebhookEventDTO;
-import com.estapar.parking.entity.Garage;
+import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.ParkingSession;
 import com.estapar.parking.entity.Spot;
-import com.estapar.parking.repository.GarageSectorRepository;
-import com.estapar.parking.repository.ParkingSessionRepository;
 import com.estapar.parking.repository.SpotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -73,7 +71,7 @@ public class WebhookEventService {
 
     private double calculatePrice(ParkingSession session) {
         long minutes = Duration.between(session.getEntryTime(), session.getExitTime()).toMinutes();
-        Garage sector = session.getSector();
+        Sector sector = session.getSector();
 
         if (sector == null) return 0.0;
 

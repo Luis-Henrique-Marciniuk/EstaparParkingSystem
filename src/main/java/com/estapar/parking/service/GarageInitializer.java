@@ -1,8 +1,7 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.entity.Garage;
+import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.Spot;
-import com.estapar.parking.repository.GarageSectorRepository;
 import com.estapar.parking.repository.SpotRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +43,7 @@ public class GarageInitializer {
 
         for (Map<String, Object> sp : spots) {
             String sectorKey = (String) sp.get("sector");
-            Garage sector = sectorRepository.findById(sectorKey).orElse(null);
+            Sector sector = sectorRepository.findById(sectorKey).orElse(null);
             if (sector == null) continue;
 
             Spot spot = new Spot();

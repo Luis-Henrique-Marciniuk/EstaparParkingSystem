@@ -1,31 +1,32 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.entity.Garage;
+import com.estapar.parking.entity.Sector;
+import com.estapar.parking.entity.Spot;
 import com.estapar.parking.entity.Vehicle;
 import com.estapar.parking.repository.SectorRepository;
+import com.estapar.parking.repository.SpotRepository;
 import com.estapar.parking.repository.VehicleRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,7 +84,7 @@ public class ParkingService {
         }
     }
 
-    public ResponseEntity<String> handleWebhookEvent(JsonNode event) {
+    public ResponseEntity<String> handleWebhookEvent(@RequestBody JsonNode event) {
         String eventType = event.get("event_type").asText();
         String licensePlate = event.get("license_plate").asText();
 
@@ -125,9 +126,9 @@ public class ParkingService {
         if (spot != null && vehicle != null && !spot.isOccupied()) {
             spot.setOccupied(true);
             spot.setEntryTime(LocalDateTime.now(java.time.Clock.systemDefaultZone()));
-            spot.setLicensePlate(licensePlate); // Associe a placa à vaga
+            spot.setLicensePlate(licensePlate);
             spotRepository.save(spot);
-            vehicle.setCurrentSpot(spot); // Associe a vaga ao veículo (se você adicionar esse campo na entidade Vehicle)
+            vehicle.setCurrentSpot(spot);
             vehicleRepository.save(vehicle);
             System.out.println("Veículo " + licensePlate + " estacionou na vaga " + spot.getId() + ".");
         } else {
@@ -146,9 +147,9 @@ public class ParkingService {
             Spot spot = vehicle.getCurrentSpot();
             spot.setOccupied(false);
             spot.setEntryTime(null);
-            spot.setLicensePlate(null); // Desassocie a placa da vaga
+            spot.setLicensePlate(null);
             spotRepository.save(spot);
-            vehicle.setCurrentSpot(null); // Desassocie a vaga do veículo
+            vehicle.setCurrentSpot(null);
             vehicleRepository.save(vehicle);
 
             System.out.println("Veículo " + licensePlate + " saiu às " + exitTime + ", preço: " + price + ".");
@@ -163,7 +164,7 @@ public class ParkingService {
         }
 
         long minutesParked = ChronoUnit.MINUTES.between(vehicle.getEntryTime(), vehicle.getExitTime());
-        Garage sector = sectorRepository.findByName(vehicle.getCurrentSpot().getSectorName());
+        Sector sector = sectorRepository.findByName(vehicle.getCurrentSpot().getSector().getName());
 
         if (sector == null) {
             return 0.0;
@@ -267,3 +268,4 @@ public class ParkingService {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
+

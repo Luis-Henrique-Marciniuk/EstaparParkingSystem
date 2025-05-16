@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -24,7 +25,16 @@ public class Spot {
     private boolean occupied = false;
 
     @ManyToOne
-    @JoinColumn(name = "sector", nullable = false)
-    private Garage garage;
+    @JoinColumn(name = "sector_name", nullable = false)
+    private Sector sector;
 
+    private LocalDateTime entryTime;
+
+    private String licensePlate;
+
+    public Spot(Double lat, Double lng, Sector sector) {
+        this.lat = lat;
+        this.lng = lng;
+        this.sector = sector;
+    }
 }
