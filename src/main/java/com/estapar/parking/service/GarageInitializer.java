@@ -54,7 +54,5 @@ public class GarageInitializer {
 //            spot.setSector(sector);
             spotRepository.save(spot);
         }
-
-        System.out.println("Garage config loaded and saved.");
     }
 }
