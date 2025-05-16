@@ -1,6 +1,6 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.entity.GarageSector;
+import com.estapar.parking.entity.Garage;
 import com.estapar.parking.entity.ParkingSpot;
 import com.estapar.parking.repository.GarageSectorRepository;
 import com.estapar.parking.repository.ParkingSpotRepository;
@@ -26,12 +26,12 @@ public class SetupService {
         JsonNode response = restTemplate.getForObject(url, JsonNode.class);
 
         for (JsonNode sectorNode : response.get("garage")) {
-            GarageSector sector = new GarageSector();
-            sector.setName(sectorNode.get("sector").asText());
+            Garage sector = new Garage();
+//            sector.setName(sectorNode.get("sector").asText());
             sector.setBasePrice(sectorNode.get("basePrice").asDouble());
             sector.setMaxCapacity(sectorNode.get("max_capacity").asInt());
-            sector.setOpenHour(LocalTime.parse(sectorNode.get("open_hour").asText()));
-            sector.setCloseHour(LocalTime.parse(sectorNode.get("close_hour").asText()));
+            sector.setOpenHour(String.valueOf(LocalTime.parse(sectorNode.get("open_hour").asText())));
+            sector.setCloseHour(String.valueOf(LocalTime.parse(sectorNode.get("close_hour").asText())));
             sector.setDurationLimitMinutes(sectorNode.get("duration_limit_minutes").asInt());
             sectorRepository.save(sector);
         }
@@ -42,8 +42,8 @@ public class SetupService {
             spot.setLng(spotNode.get("lng").asDouble());
             spot.setOccupied(false);
             String sectorName = spotNode.get("sector").asText();
-            GarageSector sector = sectorRepository.findByName(sectorName).orElseThrow();
-            spot.setSector(sector);
+//            Garage sector = sectorRepository.findByName(sectorName).orElseThrow();
+//            spot.setSector(sector);
             spotRepository.save(spot);
         }
     }

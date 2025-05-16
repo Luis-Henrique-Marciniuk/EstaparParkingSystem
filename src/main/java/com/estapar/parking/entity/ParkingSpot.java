@@ -20,12 +20,11 @@ public class ParkingSpot {
     private Double lat;
     private Double lng;
 
-
     @Column(nullable = false)
     private boolean occupied = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sector_id")
-    private GarageSector sector;
+    @ManyToOne
+    @JoinColumn(name = "sector", nullable = false)
+    private Garage garage;
 
 }

@@ -1,7 +1,7 @@
 package com.estapar.parking.service;
 
 import com.estapar.parking.dto.WebhookEventDTO;
-import com.estapar.parking.entity.GarageSector;
+import com.estapar.parking.entity.Garage;
 import com.estapar.parking.entity.ParkingSession;
 import com.estapar.parking.entity.ParkingSpot;
 import com.estapar.parking.repository.GarageSectorRepository;
@@ -46,7 +46,7 @@ public class WebhookEventService {
 
             spot.setOccupied(true);
             session.setSpot(spot);
-            session.setSector(spot.getSector());
+//            session.setSector(spot.getSector());
             spotRepository.save(spot);
             sessionRepository.save(session);
         }
@@ -73,7 +73,7 @@ public class WebhookEventService {
 
     private double calculatePrice(ParkingSession session) {
         long minutes = Duration.between(session.getEntryTime(), session.getExitTime()).toMinutes();
-        GarageSector sector = session.getSector();
+        Garage sector = session.getSector();
 
         if (sector == null) return 0.0;
 

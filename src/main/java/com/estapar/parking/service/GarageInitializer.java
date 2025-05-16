@@ -1,6 +1,6 @@
 package com.estapar.parking.service;
 
-import com.estapar.parking.entity.GarageSector;
+import com.estapar.parking.entity.Garage;
 import com.estapar.parking.entity.ParkingSpot;
 import com.estapar.parking.repository.GarageSectorRepository;
 import com.estapar.parking.repository.ParkingSpotRepository;
@@ -31,27 +31,27 @@ public class GarageInitializer {
         List<Map<String, Object>> sectors = (List<Map<String, Object>>) response.get("garage");
         List<Map<String, Object>> spots = (List<Map<String, Object>>) response.get("spots");
 
-        for (Map<String, Object> s : sectors) {
-            GarageSector sector = new GarageSector(
-                    (String) s.get("sector"),
-                    ((Number) s.get("basePrice")).doubleValue(),
-                    (Integer) s.get("max_capacity"),
-                    LocalTime.parse((String) s.get("open_hour")),
-                    LocalTime.parse((String) s.get("close_hour")),
-                    (Integer) s.get("duration_limit_minutes")
-            );
-            sectorRepository.save(sector);
-        }
+//        for (Map<String, Object> s : sectors) {
+//            Garage sector = new Garage(
+//                    (String) s.get("sector"),
+//                    ((Number) s.get("basePrice")).doubleValue(),
+//                    (Integer) s.get("max_capacity"),
+//                    LocalTime.parse((String) s.get("open_hour")),
+//                    LocalTime.parse((String) s.get("close_hour")),
+//                    (Integer) s.get("duration_limit_minutes")
+//            );
+//            sectorRepository.save(sector);
+//        }
 
         for (Map<String, Object> sp : spots) {
             String sectorKey = (String) sp.get("sector");
-            GarageSector sector = sectorRepository.findById(sectorKey).orElse(null);
+            Garage sector = sectorRepository.findById(sectorKey).orElse(null);
             if (sector == null) continue;
 
             ParkingSpot spot = new ParkingSpot();
             spot.setLat(((Number) sp.get("lat")).doubleValue());
             spot.setLng(((Number) sp.get("lng")).doubleValue());
-            spot.setSector(sector);
+//            spot.setSector(sector);
             spotRepository.save(spot);
         }
 
