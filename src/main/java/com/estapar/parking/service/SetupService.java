@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalTime;
+
 @Service
 @RequiredArgsConstructor
 public class SetupService {
@@ -28,8 +30,8 @@ public class SetupService {
             sector.setName(sectorNode.get("sector").asText());
             sector.setBasePrice(sectorNode.get("basePrice").asDouble());
             sector.setMaxCapacity(sectorNode.get("max_capacity").asInt());
-            sector.setOpenHour(sectorNode.get("open_hour").asText());
-            sector.setCloseHour(sectorNode.get("close_hour").asText());
+            sector.setOpenHour(LocalTime.parse(sectorNode.get("open_hour").asText()));
+            sector.setCloseHour(LocalTime.parse(sectorNode.get("close_hour").asText()));
             sector.setDurationLimitMinutes(sectorNode.get("duration_limit_minutes").asInt());
             sectorRepository.save(sector);
         }
