@@ -3,6 +3,7 @@ package com.estapar.parking.service;
 import com.estapar.parking.entity.Sector;
 import com.estapar.parking.entity.Spot;
 import com.estapar.parking.entity.ParkingSession;
+import com.estapar.parking.repository.PriceRepository;
 import com.estapar.parking.repository.SectorRepository;
 import com.estapar.parking.repository.SpotRepository;
 import com.estapar.parking.repository.ParkingSessionRepository;
@@ -37,16 +38,18 @@ public class ParkingService {
     private final SectorRepository sectorRepository;
     private final SpotRepository spotRepository;
     private final ParkingSessionRepository sessionRepository;
+    private final PriceRepository priceRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     @Value("${simulator.url}")
     private String simulatorUrl;
 
-    public ParkingService(SectorRepository sectorRepository, SpotRepository spotRepository, ParkingSessionRepository sessionRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public ParkingService(SectorRepository sectorRepository, SpotRepository spotRepository, ParkingSessionRepository sessionRepository, PriceRepository priceRepository, RestTemplate restTemplate, ObjectMapper objectMapper) { // Adicionado priceRepository ao construtor
         this.sectorRepository = sectorRepository;
         this.spotRepository = spotRepository;
         this.sessionRepository = sessionRepository;
+        this.priceRepository = priceRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }

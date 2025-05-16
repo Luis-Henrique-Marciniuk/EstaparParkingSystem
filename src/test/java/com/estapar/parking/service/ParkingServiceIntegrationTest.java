@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import com.estapar.parking.exception.SectorFullException; // Importe a classe SectorFullException
+import com.estapar.parking.exception.SectorFullException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -77,7 +77,7 @@ public class ParkingServiceIntegrationTest {
         parkingService.handleEntry("ABC-123", LocalDateTime.now());
         parkingService.handleEntry("DEF-456", LocalDateTime.now());
 
-        assertThrows(SectorFullException.class, () -> { // Use SectorFullException.class
+        assertThrows(SectorFullException.class, () -> {
             parkingService.handleEntry("GHI-789", LocalDateTime.now());
         });
     }

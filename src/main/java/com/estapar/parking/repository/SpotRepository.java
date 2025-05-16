@@ -13,8 +13,9 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
     Spot findByLatAndLng(double lat, double lng);
     List<Spot> findBySectorName(String sectorName);
     long countBySectorNameAndOccupied(String sectorName, boolean occupied);
-    @Query("SELECT s FROM Spot s WHERE s.occupied = false")
-    Optional<Spot> findFirstByOccupiedFalse();
 
+    @Query("SELECT s FROM Spot s WHERE s.occupied = false ORDER BY s.id ASC")
     Optional<Spot> findFirstAvailableSpot();
+
+    Optional<Spot> findFirstByOccupiedFalse();
 }
