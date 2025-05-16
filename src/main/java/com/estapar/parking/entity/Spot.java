@@ -30,7 +30,7 @@ public class Spot {
     private Sector sector;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parking_session_id")
+    @JoinColumn(name = "parking_session_id", nullable = true)
     private ParkingSession currentParkingSession;
 
 
